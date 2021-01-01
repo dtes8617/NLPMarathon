@@ -131,3 +131,7 @@ dmypy.json
 *.txt
 *.csv
 *.txt.big
+*.zip
+
+/Homework/D07data
+/Homework/data

@@ -53,5 +53,8 @@ model.fit(Xtrain, Ytrain)
 print("Classification rate for AdaBoost:", model.score(Xtest, Ytest))
 
 #####也可試試其他的
-from sklearn.ensemble import Ra
+from sklearn.ensemble import RandomForestClassifier
+model = RandomForestClassifier()
+model.fit(Xtrain, Ytrain)
+print("Classification rate for Random Forest:", model.score(Xtest, Ytest))
 ## https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html

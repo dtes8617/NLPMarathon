@@ -135,6 +135,7 @@ dmypy.json
 *.json
 *.png
 *.tsv
+*.data
 
 /Homework/D07data
 /Homework/data

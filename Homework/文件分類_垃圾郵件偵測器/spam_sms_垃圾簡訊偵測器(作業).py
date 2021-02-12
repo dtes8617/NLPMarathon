@@ -41,6 +41,14 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from wordcloud import WordCloud
 
+import string
+import re
+from nltk import word_tokenize, pos_tag
+from nltk.corpus import stopwords, wordnet
+from nltk.stem import WordNetLemmatizer
+
+import tqdm
+
 
 # 資料來自：
 # https://www.kaggle.com/uciml/sms-spam-collection-dataset
@@ -60,10 +68,42 @@ Y = df['b_labels'].values
 # 分為訓練與測試組
 df_train, df_test, Ytrain, Ytest = train_test_split(df['data'], Y, test_size=0.33)
 
+# 清洗文字流程
+# Step 1: 消除標點符號
+prog = re.compile(r'[^A-Za-z]+')
+df_train_clear = df_train.str.lower().apply(lambda x: prog.sub(' ', x))
+df_test_clear = df_test.str.lower().apply(lambda x: prog.sub(' ', x))
+
+# Step 2: 斷詞
+df_train_clear = df_train_clear.apply(word_tokenize)
+df_test_clear = df_test_clear.apply(word_tokenize)
+
+# Step 3: 去除停用字 & 標注詞性
+stopwords_ls = stopwords.words('english')
+pos_dict = {
+    'V': wordnet.VERB,
+    'J': wordnet.ADJ,
+    'N': wordnet.NOUN,
+    'R': wordnet.ADV
+}
+
+df_train_clear = df_train_clear.apply(lambda l: [pos_tag([w]) for w in l if w not in stopwords_ls])
+df_test_clear = df_test_clear.apply(lambda l: [pos_tag([w]) for w in l if w not in stopwords_ls])
+
+# Step 4: 還原字詞
+lemmatizer = WordNetLemmatizer()
+
+df_train_clear = df_train_clear.apply(lambda l: ' '.join(
+    [lemmatizer.lemmatize(w[0][0], pos_dict.get(w[0][1][0], wordnet.NOUN)) 
+     for w in l if w not in stopwords_ls]))
+df_test_clear = df_test_clear.apply(lambda l: ' '.join(
+    [lemmatizer.lemmatize(w[0][0], pos_dict.get(w[0][1][0], wordnet.NOUN)) 
+     for w in l if w not in stopwords_ls]))
+
 # 方法1:以TF-IDF 為特徵
 tfidf = TfidfVectorizer(decode_error='ignore')
-Xtrain = tfidf.fit_transform(df_train)
-Xtest = tfidf.transform(df_test)
+Xtrain = tfidf.fit_transform(df_train_clear)
+Xtest = tfidf.transform(df_test_clear)
 
 # 方法2:以數量為特徵
 # count_vectorizer = CountVectorizer(decode_error='ignore')
@@ -77,19 +117,21 @@ model = MultinomialNB()
 model.fit(Xtrain, Ytrain)
 print("train score:", model.score(Xtrain, Ytrain))
 print("test score:", model.score(Xtest, Ytest))
+# train score: 0.970265202250201
+# test score: 0.9613920609026645
 # exit()
 
 
 # 以wordcloud visualize 數據
 def visualize(label):
-  words = ''
-  for msg in df[df['labels'] == label]['data']:
-    msg = msg.lower()
-    words += msg + ' '
-  wordcloud = WordCloud(width=600, height=400).generate(words)
-  plt.imshow(wordcloud)
-  plt.axis('off')
-  plt.show()
+    words = ''
+    for msg in df[df['labels'] == label]['data']:
+        msg = msg.lower()
+        words += msg + ' '
+    wordcloud = WordCloud(width=600, height=400).generate(words)
+    plt.imshow(wordcloud)
+    plt.axis('off')
+    plt.show()
 
 visualize('spam')
 visualize('ham')
@@ -102,11 +144,9 @@ df['predictions'] = model.predict(X)
 # 沒預測出的SPAM
 sneaky_spam = df[(df['predictions'] == 0) & (df['b_labels'] == 1)]['data']
 for msg in sneaky_spam:
-  print(msg)
+    print(msg)
 
 # 以為是SPAM其實誤判
 not_actually_spam = df[(df['predictions'] == 1) & (df['b_labels'] == 0)]['data']
 for msg in not_actually_spam:
-  print(msg)
-
-
+    print(msg)

@@ -27,8 +27,11 @@ from builtins import range
 import nltk
 import numpy as np
 import matplotlib.pyplot as plt
+from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from sklearn.decomposition import TruncatedSVD
+
+import re
 
 
 wordnet_lemmatizer = WordNetLemmatizer()
@@ -50,13 +53,23 @@ stopwords = stopwords.union({
     'third', 'second', 'fourth', })
 def my_tokenizer(s):
     s = s.lower() # downcase
+    s = re.sub('[^a-z]+', ' ', s)
+    
     tokens = nltk.tokenize.word_tokenize(s) # 字串變單字 (tokens)
     tokens = [t for t in tokens if len(t) > 2] # 移除短字
-    tokens = [wordnet_lemmatizer.lemmatize(t) for t in tokens] # 只取英文基本型
     tokens = [t for t in tokens if t not in stopwords] # 移除 stopwords
-    tokens = [t for t in tokens if not any(c.isdigit() for c in t)] # 移除數字，比方 "3rd edition"
+    tags = nltk.pos_tag(tokens)
+    tokens = [wordnet_lemmatizer.lemmatize(t[0], extract_tags(t)) for t in tags] # 只取英文基本型
     return tokens
 
+def extract_tags(s):
+    pos_dict = {
+        'V': wordnet.VERB,
+        'J': wordnet.ADJ,
+        'N': wordnet.NOUN,
+        'R': wordnet.ADV
+    }
+    return pos_dict.get(s[1][0], wordnet.NOUN)
 
 # 先產生 word-to-index map 再產生 word-frequency vectors
 # 同時儲存 tokenized 版本未來不需再做 tokenization

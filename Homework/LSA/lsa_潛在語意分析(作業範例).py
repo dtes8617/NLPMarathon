@@ -63,7 +63,7 @@ for title in titles:
         error_count += 1
 
 
-print("Number of errors parsing file:", error_count, "number of lines in file:", len(titles))
+print("Number of errors parsing file:", error_count, "\nnumber of lines in file:", len(titles))
 if error_count == len(titles):
     print("There is no data to do anything with! Quitting...")
     exit()

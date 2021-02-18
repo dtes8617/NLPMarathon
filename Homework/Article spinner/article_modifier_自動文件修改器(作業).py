@@ -27,7 +27,7 @@ from bs4 import BeautifulSoup
 
 
 # load the reviews
-positive_reviews = BeautifulSoup(open('electronics/positive.review', encoding='ISO-8859-1').read(), "lxml")
+positive_reviews = BeautifulSoup(open('../electronics/positive.review', encoding='ISO-8859-1').read(), "lxml")
 positive_reviews = positive_reviews.findAll('review_text')
 
 
@@ -37,11 +37,11 @@ trigrams = {}
 for review in positive_reviews:
     s = review.text.lower()
     tokens = nltk.tokenize.word_tokenize(s)
-    for i in range(len(tokens) - 2):
-        k = (tokens[i], tokens[i+2])
+    for i in range(len(tokens) - 4):
+        k = (tokens[i], tokens[i+1], tokens[i+3], tokens[i+4])
         if k not in trigrams:
             trigrams[k] = []
-        trigrams[k].append(tokens[i+1])
+        trigrams[k].append(tokens[i+2])
 
 # 將中間字矩陣變成或然率向量
 trigram_probabilities = {}
@@ -76,12 +76,12 @@ def test_spinner():
     s = review.text.lower()
     print("Original:", s)
     tokens = nltk.tokenize.word_tokenize(s)
-    for i in range(len(tokens) - 2):
+    for i in range(len(tokens) - 4):
         if random.random() < 0.2: # 20% chance of replacement
-            k = (tokens[i], tokens[i+2])
+            k = (tokens[i], tokens[i+1], tokens[i+3], tokens[i+4])
             if k in trigram_probabilities:
                 w = random_sample(trigram_probabilities[k])
-                tokens[i+1] = w
+                tokens[i+2] = w
     print("Spun:")
     print(" ".join(tokens).replace(" .", ".").replace(" '", "'").replace(" ,", ",").replace("$ ", "$").replace(" !", "!"))
 

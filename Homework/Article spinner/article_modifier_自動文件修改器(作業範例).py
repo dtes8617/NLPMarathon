@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 
 
 # load the reviews
-positive_reviews = BeautifulSoup(open('electronics/positive.review', encoding='ISO-8859-1').read(), "lxml")
+positive_reviews = BeautifulSoup(open('../electronics/positive.review', encoding='ISO-8859-1').read(), "lxml")
 positive_reviews = positive_reviews.findAll('review_text')
 
 

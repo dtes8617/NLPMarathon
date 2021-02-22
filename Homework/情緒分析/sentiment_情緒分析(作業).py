@@ -32,9 +32,14 @@ import nltk
 import numpy as np
 from sklearn.utils import shuffle
 
+from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 from bs4 import BeautifulSoup
+
+import re
+
 
 
 wordnet_lemmatizer = WordNetLemmatizer()
@@ -48,10 +53,10 @@ stopwords = set(w.rstrip() for w in open('stopwords.txt'))
 
 # 讀正向與負向 reviews
 # data courtesy of http://www.cs.jhu.edu/~mdredze/datasets/sentiment/index2.html
-positive_reviews = BeautifulSoup(open('electronics/positive.review', encoding='utf-8').read(), features="html5lib")
+positive_reviews = BeautifulSoup(open('../electronics/positive.review', encoding='utf-8').read(), features="html5lib")
 positive_reviews = positive_reviews.findAll('review_text')
 
-negative_reviews = BeautifulSoup(open('electronics/negative.review', encoding='utf-8').read(), features="html5lib")
+negative_reviews = BeautifulSoup(open('../electronics/negative.review', encoding='utf-8').read(), features="html5lib")
 negative_reviews = negative_reviews.findAll('review_text')
 
 
@@ -60,11 +65,23 @@ negative_reviews = negative_reviews.findAll('review_text')
 
 def my_tokenizer(s):
     s = s.lower() # downcase
-    tokens = nltk.tokenize.word_tokenize(s) # 將字串改為tokens
-    tokens = [t for t in tokens if len(t) > 2] # 去除短字
-    tokens = [wordnet_lemmatizer.lemmatize(t) for t in tokens] # 去除大小寫
-    tokens = [t for t in tokens if t not in stopwords] # 去除 stopwords
+    s = re.sub('[^a-z]+', ' ', s)
+    
+    tokens = nltk.tokenize.word_tokenize(s) # 字串變單字 (tokens)
+    tokens = [t for t in tokens if len(t) > 2] # 移除短字
+    tokens = [t for t in tokens if t not in stopwords] # 移除 stopwords
+    tags = nltk.pos_tag(tokens)
+    tokens = [wordnet_lemmatizer.lemmatize(t[0], extract_tags(t)) for t in tags] # 只取英文基本型
     return tokens
+
+def extract_tags(s):
+    pos_dict = {
+        'V': wordnet.VERB,
+        'J': wordnet.ADJ,
+        'N': wordnet.NOUN,
+        'R': wordnet.ADV
+    }
+    return pos_dict.get(s[1][0], wordnet.NOUN)
 
 
 # 先產生 word-to-index map 再產生 word-frequency vectors
@@ -132,7 +149,8 @@ Ytrain = Y[:-100,]
 Xtest = X[-100:,]
 Ytest = Y[-100:,]
 
-model = LogisticRegression()
+# model = LogisticRegression()
+model = RandomForestClassifier()
 model.fit(Xtrain, Ytrain)
 print("Train accuracy:", model.score(Xtrain, Ytrain))
 print("Test accuracy:", model.score(Xtest, Ytest))
@@ -140,11 +158,11 @@ print("Test accuracy:", model.score(Xtest, Ytest))
 
 # 列出每個字的正負 weight
 # 用不同的 threshold values!
-threshold = 0.5
-for word, index in iteritems(word_index_map):
-    weight = model.coef_[0][index]
-    if weight > threshold or weight < -threshold:
-        print(word, weight)
+# threshold = 0.5
+# for word, index in iteritems(word_index_map):
+#     weight = model.coef_[0][index]
+#     if weight > threshold or weight < -threshold:
+#         print(word, weight)
 
 
 # 找出歸類錯誤的例子
